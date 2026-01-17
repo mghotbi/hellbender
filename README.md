@@ -13,22 +13,8 @@ Do taxa traditionally associated with a given function (e.g. Chitinophagaceae) s
 
 
 ---
-What the script does
-
-This script performs OTU-level core microbiome analysis and family-specific OTU visualization using a phyloseq object as input.
-
-Specifically, it:
-Builds a phyloseq object from:
-
-OTU count table
-Taxonomy table
-Sample metadata
-
-Defines core OTUs per group based on prevalence (DspikeIn::plot_core_microbiome_custom(); https://github.com/mghotbi/DspikeIn)
-
-Core = OTU present in ≥ X proportion of samples within a group
-Threshold is user-controlled (prev_core_threshold)
-Identifies OTUs belonging to a target family/order
+ 
  
 
 
+<img width="1104" height="674" alt="Image" src="https://github.com/user-attachments/assets/17f78037-f889-4259-8e23-76d5da35b27e" />
