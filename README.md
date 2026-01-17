@@ -29,18 +29,6 @@ Defines core OTUs per group based on prevalence (DspikeIn::plot_core_microbiome_
 Core = OTU present in ≥ X proportion of samples within a group
 Threshold is user-controlled (prev_core_threshold)
 Identifies OTUs belonging to a target family/order
-Example: Chitinophagales / Chitinophagaceae
-
-Can be extended to all core families
-Calculates OTU prevalence by group
-Outputs a table suitable for Supplementary Materials
-Generates OTU-level heatmaps
-Values = log10(relative abundance + pseudocount)
-Rows = OTUs
-Columns = samples
-Annotated by group
-Hierarchical clustering with safety checks (no errors if only one OTU)
-Saves outputs as PDF + PNG heatmaps
-Prevalence tables
+ 
 
 
