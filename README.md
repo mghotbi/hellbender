@@ -41,8 +41,6 @@ Columns = samples
 Annotated by group
 Hierarchical clustering with safety checks (no errors if only one OTU)
 Saves outputs as PDF + PNG heatmaps
-
 Prevalence tables
 
-Short explanation text for methods
 
