@@ -9,9 +9,6 @@ Keywords: eastern hellbender, headstart program, gut microbiome, wild diet, rewi
 
 
 
-
-<img width="468" height="607" alt="image" src="https://github.com/user-attachments/assets/feb0891f-15a6-4029-b82d-049e6c61d79e" />
-
 Why this script exists
 
 Many microbiome studies summarize results at higher taxonomic ranks (e.g. family or order). However, ecological patterns observed at these levels may be driven by different underlying OTUs, which can mask biologically meaningful differences.
