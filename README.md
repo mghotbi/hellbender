@@ -22,7 +22,7 @@ We completed the first study elucidating the gut microbial composition patterns 
 
 ### Code & Data Availability
 
-All scripts and data used in this manuscript are available in the **`code/`** and **`data/`** directories of this repository. 
+All scripts and data used in this manuscript are available in the **`Code/`** and **`Data/`** directories of this repository. 
 
 
 
