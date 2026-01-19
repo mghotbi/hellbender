@@ -1,0 +1,148 @@
+---
+title: "FAPROTAX Functional Profiling"
+author: "Mitra Ghotbi"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: readable
+---
+
+# FAPROTAX script (Python-based) 
+
+```{bash}
+
+python collapse_table.py \
+    -i feature-table.tsv \
+    -o faprotax_output.tsv \
+    -g taxonomy.tsv \
+    --columns_are_samples
+
+```
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# processing data in R
+
+```{r}
+library(phyloseq)
+library(microeco)
+library(file2meco)
+library(dplyr)
+library(stringr)
+library(readr)
+library(tidyr)
+library(pheatmap)
+library(RColorBrewer)
+library(ComplexHeatmap)
+library(circlize)
+library(viridis)
+library(tibble)
+
+
+```
+
+
+#  Load Raw Data
+
+```{r}
+func_data <- read_tsv("~/Downloads/240903_16S_HB_raw_seq_data_P1-P3_Complete/func_table.tsv")
+
+# Drop controls
+artificial_samples <- c(
+  "NTC-swab-35815_S201", "NTC-swab-36113_S216", "Pool-neg-ctrl-34523_S36",
+  "poolNTC-swab-34624_S192", "Pos-control-34522_S24",
+  "spiked-swab-34623_S180", "spiked-swab-35814_S198"
+)
+
+func_data_clean <- func_data %>%
+  select(-all_of(artificial_samples))
+
+
+```
+
+# Filter Metadata and Func Table
+
+
+```{r}
+metadata_clean <- metadata %>%
+  filter(!sample_id %in% artificial_samples)
+
+valid_samples <- intersect(colnames(func_data)[-1], metadata_clean$sample_id)
+
+func_data_clean <- func_data %>%
+  select(`#group`, all_of(valid_samples))
+```
+
+# long & wide formats
+
+```{r}
+func_long <- func_data_clean %>%
+  pivot_longer(cols = -`#group`, names_to = "sample_id", values_to = "abundance")
+
+func_meta <- left_join(func_long, metadata, by = "sample_id")
+
+func_wide <- func_meta %>%
+  select(`#group`, sample_id, abundance) %>%
+  pivot_wider(names_from = sample_id, values_from = abundance)
+
+func_wide$`#group` <- make.unique(func_wide$`#group`)
+rownames(func_wide) <- func_wide$`#group`
+func_wide <- func_wide[, -1]
+
+# Numeric remains
+func_wide_numeric <- func_wide[, sapply(func_wide, is.numeric)]
+
+func_wide_clean <- func_wide_numeric[rowMeans(!is.na(func_wide_numeric)) >= 0.5, ]
+
+# Z-score
+func_scaled <- func_wide_clean %>%
+  as.matrix() %>%
+  t() %>%
+  scale() %>%
+  t()
+
+func_scaled[is.infinite(func_scaled)] <- NA
+
+# rm NA
+func_scaled_clean <- func_scaled[rowSums(!is.na(func_scaled)) > 0, ]
+
+```
+
+
+# Build Sample Annotation
+
+```{r}
+annotation <- metadata %>%
+  filter(sample_id %in% colnames(func_scaled_clean)) %>%
+  select(sample_id, diet_crayfish) %>%
+  column_to_rownames("sample_id")
+
+```
+
+# Step 8: Plot Heatmap
+
+
+```{r}
+
+
+pheatmap(
+  mat = func_scaled_clean,
+  annotation_col = annotation,
+  cluster_rows = TRUE,
+  cluster_cols = FALSE,
+  show_colnames = FALSE,
+  fontsize_row = 7,
+  color = colorRampPalette(brewer.pal(9, "YlOrRd"))(100),
+  main = "Functional Profiles by Crayfish Diet"
+)
+
+
+```
+

@@ -1,0 +1,70 @@
+---
+title: "UpsetR"
+output: html_document
+date: "2026-01-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(dplyr)
+library(tidyr)
+library(readr)
+library(UpSetR)
+library(vegan)
+
+setwd("~/Documents/MTSU/Hellbender_project_ChloeCummins")
+getwd()
+```
+
+#Loading OTU table
+```{r}
+otu_table <- read.csv("Lluvia_network_data/250508_16S_OTU_count_table_decontam_Lluvia_network.csv", check.names = TRUE)
+colnames(otu_table)[colnames(otu_table) == "index"] <- "sample_id"
+head(otu_table)
+```
+
+
+#Loading metadata
+```{r}
+metadata <- read.csv("Lluvia_network_data/250508_16S_metadata_decontam_Lluvia_network_MOD.csv", stringsAsFactors = FALSE)
+colnames(metadata)[colnames(metadata) == "index"] <- "sample_id"
+head(metadata)
+```
+
+
+#Summarizing OTU counts by Zoo or Wild
+```{r}
+
+otu_table_envScale <- otu_table %>%
+  left_join(metadata, by = "sample_id") %>%
+  group_by(env_broad_scale) %>%
+  summarise(across(starts_with("Otu"), sum))
+
+head(otu_table_envScale)
+
+```
+
+#Adapting data for UpSetR and Ploting
+```{r}
+#Presence/Absence data: 
+otu_long <- otu_table_envScale %>%
+  pivot_longer(-env_broad_scale,
+               names_to = "OTU",
+               values_to = "PA") %>%
+  mutate(PA = ifelse(PA > 0, 1, 0)) %>%
+  filter(PA ==1)
+
+#
+otu_wild_zoo <- otu_long %>%
+   group_by(env_broad_scale) %>%
+   summarise(OTUs = list(OTU), .groups = "drop") %>%
+   deframe()
+
+UpSetR::upset(
+     UpSetR::fromList(otu_wild_zoo),
+     sets = names(otu_wild_zoo),
+     order.by = "freq"
+ )
+```
