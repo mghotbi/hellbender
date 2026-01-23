@@ -111,6 +111,140 @@ tax_table(physeq) %>%
 
 
 
+#####Creating the relative abundance plot based on Phylum - captive vs. wild all data#####
+
+#Note: The code to create the following relative abundance plots was modified/adapted from https://rpubs.com/lgschaerer/1006964
+
+
+#Transform into relative abundance of the reads
+physeq <- transform_sample_counts(physeq, function(x) x/sum(x))
+
+#Converting the phyloseq object into a data frame based on phylum rank
+phy_abund <- physeq %>% tax_glom(taxrank = "phylum") %>% ##setting to the phylum level
+  psmelt()  #melting data to long format for plotting
+head(phy_abund)
+
+#Filtering and modifying the data for plotting
+all_data <- phy_abund %>% 
+  select(phylum, Abundance, Sample, group_broad, env_broad_scale) %>% #selecting variables of interest
+  filter(Abundance != 0) %>% #filtering so that abundance of taxa is at least greater than 0
+  mutate(phylum = as.character(phylum))
+head(all_data)
+
+#Preparing to create relative abundance plot based on phylum
+phy_plot <- all_data %>% 
+  select(Sample, group_broad, env_broad_scale, phylum, Abundance) %>% #selecting all variables to be used
+  group_by(Sample, group_broad, env_broad_scale) %>% 
+  mutate(totalSum = sum(Abundance)) %>% 
+  ungroup() %>% 
+  group_by(Sample, group_broad, env_broad_scale, phylum) %>% 
+  summarize(Abundance = sum(Abundance), 
+            totalSum, RelAb = Abundance/totalSum) %>% #calculating relative abundance based on order abundance per host
+  unique() #leaving only unique observations
+head(phy_plot)
+
+#Grouping low abundance/rare taxa into Other category
+phy_plot <- phy_plot %>% group_by(Sample, group_broad, env_broad_scale, phylum, totalSum) %>%
+  summarise(
+    Abundance = sum(Abundance),
+    phylum = ifelse(RelAb < 0.03, "Other (< 3%)", phylum)) %>%
+  group_by(Sample, group_broad, env_broad_scale, phylum, totalSum) %>% 
+  summarize(Abundance = sum(Abundance), 
+            RelAb = Abundance/totalSum) %>% #calculating relative abundance based on phylum abundance per host
+  unique()
+head(phy_plot)
+#specifying low abundance/rare taxa (less than 3% relative abundance) as Other
+
+#Checking to make sure that the relative abundances are as we would expect
+max(phy_plot$RelAb)
+mean(phy_plot$RelAb)
+min(phy_plot$RelAb)
+#As a note, the minimum is low because a couple of samples did not have a lot of 
+#rare taxa for the Other category
+
+length(unique(phy_plot$phylum))
+
+#Setting up the interpolated palette for plotting
+palette_length <- length(unique(phy_plot$phylum))
+extend_pal <- colorRampPalette(brewer.pal(18, "Set3"))
+#There is a warning here but it still creates the requested palette
+
+#Setting up the variables as factors to allow for better plotting
+phy_plot$group_broad <- factor(phy_plot$group_broad, order = T, levels = c("Nashville Zoo", "Chattanooga Zoo", 
+                                                                           "East TN Wild", "Middle TN Wild", "Middle TN Recapture"))
+
+phy_plot$env_broad_scale <- factor(phy_plot$env_broad_scale, order = T, levels = c("zoo", "wild"))
+
+#Creating a new column based on cap/wild for better plotting
+phy_plot <- phy_plot %>% 
+  mutate(animal_env = case_when(env_broad_scale == "zoo" ~ "Zoo", 
+                                TRUE ~ "Wild–Caught"))
+
+phy_plot$animal_env <- factor(phy_plot$animal_env, order = T, levels = c("Zoo", "Wild–Caught"))
+#converting the variable to a factor for better plotting
+
+#for Captive labels instead of Zoo for Nash and Chatt animals
+#ord_plot <- ord_plot %>% 
+#  mutate(animal_env = case_when(env_broad_scale == "zoo" ~ "Captive", 
+#                                TRUE ~ "Wild–Caught"))
+
+
+#Plotting the relative abundance bar chart based on phylum
+phy_rel_plot_all <- ggplot(phy_plot) +
+  geom_col(mapping = aes(x = Sample, y = RelAb, fill = fct_relevel(phylum, c("Other (< 3%)"), after = 18)), 
+           position = "stack", show.legend = TRUE, width = 1) +
+  ylab("Relative Abundance") +
+  xlab(NULL) +
+  scale_fill_manual(values = extend_pal(palette_length)) + 
+  theme_bw() +
+  theme(legend.text = element_text(size = 9.25),
+        legend.position = "bottom",
+        legend.title = element_text(face="bold", size = 14),
+        legend.key.width = unit(0.5, "cm"),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  labs(fill = "Phylum") +
+  #  facet_wrap(~ group_broad) +
+  #facet_grid(cols = vars(fct_relevel(group_broad, c("Nashville Zoo", "Chattanooga Zoo", "East TN Wild", "Middle TN Wild"))), 
+  #           scales = "free_x", space = "free_x") +
+  facet_nested(~ animal_env + group_broad, 
+               scales = "free_x", space = "free_x") + #creating nested facets with the ggh4x package
+  force_panelsizes(cols = c(1.32, 0.27, 0.24, 0.25, 0.31)) + 
+  guides(fill = guide_legend(ncol = 8))
+print(phy_rel_plot_all)
+
+#Checking which taxa are unique amongst the groups
+#ord_recap_unique <- ord_plot %>% 
+#  group_by(group_broad) %>% 
+#  distinct(order)
+#View(ord_recap_unique)
+
+#Calculating the SD for the phyla for each group
+#phy_plot <- phy_plot %>% 
+#  group_by(group_broad, phylum) %>% 
+#  mutate(group_sd = sd(RelAb, na.rm = TRUE))
+
+#Calculating the SD for overall phyla
+phy_plot <- phy_plot %>% 
+  group_by(phylum) %>% 
+  mutate(group_sd = sd(RelAb, na.rm = TRUE))
+
+
+
+#Changing the order of the mid TN recaps to go at the end instead of the middle
+#ord_rel_plot_all +
+#  facet_grid(cols = vars(fct_relevel(group_broad, c("Middle TN Recapture"), after = 4)), 
+#             scales = "free_x", space = "free_x")
+#print(ord_rel_plot_all)
+
+
+#Note: to get the relative abundance percentages of phyla for each group, take out the "Sample" variable
+#in the script above (for the all_data and phy_plot objects) so that it calculates the rel. abund. of 
+#bacterial phyla based on the group rather than on a sample by sample basis (or you can remove both the sample and group variable to 
+#calculate rel. abund of phyla for all hellbenders)
+
+
+
 #####Creating the relative abundance plot based on Order - captive vs. wild all data#####
 
 #Note: The code to create the following relative abundance plots was modified/adapted from https://rpubs.com/lgschaerer/1006964
@@ -218,6 +352,13 @@ print(ord_rel_plot_all)
 #  group_by(group_broad) %>% 
 #  distinct(order)
 #View(ord_recap_unique)
+
+
+#Calculating SD for orders in each group
+ord_plot <- ord_plot %>% 
+  group_by(group_broad, order) %>% 
+  mutate(group_sd = sd(RelAb, na.rm = TRUE))
+
 
 
 #Changing the order of the mid TN recaps to go at the end instead of the middle
