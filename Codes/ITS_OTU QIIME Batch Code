@@ -18,34 +18,6 @@
 # 5'-GAACCWGCGGARGGATCA-3'
 # 5'-GCTGCGTTCTTCATCGATGC-3'
 
-# Create a manifest file for importing
-#!/bin/bash
-
-# Define the output file
-output_file="manifest.tsv"
-
-# Write the header to the output file
-echo -e "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" > $output_file
-
-# Loop through all forward read files
-for i in *R1*.fastq.gz; do
-    # Extract the sample ID by removing the unwanted part
-    sample_id="${i/_L001_R1_001.fastq.gz/}"
-
-    # Define the forward and reverse file paths
-    forward_filepath="$PWD/$i"
-    reverse_filepath="$PWD/${i/_R1_001.fastq.gz/_R2_001.fastq.gz}"
-
-    # Modify the sample ID by removing "_L001_R1_001" and "_L001_R2_001" for the reverse read
-    sample_id="${sample_id/_S[0-9]*_L001_R1/}"
-    
-    # Write the sample ID and file paths to the output file
-    echo -e "$sample_id\t$forward_filepath\t$reverse_filepath" >> $output_file
-done
-
-echo "Manifest file created: $output_file"
-
-
 ##### Import sequences with the manifest
 qiime tools import \
   --type 'SampleData[PairedEndSequencesWithQuality]' \
@@ -72,7 +44,7 @@ qiime dada2 denoise-paired \
   --i-demultiplexed-seqs trimmed_exact.qza \
   --p-trunc-len-r 0 \
   --p-trunc-len-f 0 \
-  --output-dir 04_denoise
+  --output-dir  4_denoise
   --p-n-threads 28
 
 
@@ -82,66 +54,13 @@ qiime dada2 denoise-paired \
 qiime vsearch cluster-features-de-novo --help
 
 qiime vsearch cluster-features-de-novo \
-  --i-table 04_denoise/table.qza \
+  --i-table 04_denoise \
   --i-sequences 04_denoise/representative_sequences.qza \
   --p-perc-identity 0.97 \
   --output-dir 05_clustered
 
   
   #############EXPORT
-  
- 
-#!/bin/bash
-
-# List files in the 05_clustered directory
-echo "Files in 05_clustered directory:"
-ls 05_clustered
-
-# Export all QIIME artifacts (.qza files) in the 05_clustered directory
-for i in 05_clustered/*.qza; do
-    if [ -f "$i" ]; then
-        echo "Exporting $i..."
-        qiime tools export --input-path "$i" --output-path "${i%.qza}.export"
-    fi
-done
-
-# Convert the feature table BIOM file to TSV format
-if [ -f 05_clustered/clustered_table.export/feature-table.biom ]; then
-    echo "Converting feature-table.biom to TSV..."
-    biom convert -i 05_clustered/clustered_table.export/feature-table.biom -o 05_clustered/clustered_table.export/feature-table.biom.tsv --to-tsv
-else
-    echo "Error: clustered_table.export/feature-table.biom not found."
-fi
-
-# Display the first few lines of the exported stats.tsv file
-if [ -f 05_clustered/clustered_denoising_stats.export/stats.tsv ]; then
-    echo "Contents of stats.tsv:"
-    head 05_clustered/clustered_denoising_stats.export/stats.tsv
-else
-    echo "stats.tsv not found."
-fi
-
-# Display the first few lines of the exported dna-sequences.fasta file
-if [ -f 05_clustered/clustered_representative_sequences.export/dna-sequences.fasta ]; then
-    echo "Contents of dna-sequences.fasta:"
-    head 05_clustered/clustered_representative_sequences.export/dna-sequences.fasta
-else
-    echo "dna-sequences.fasta not found."
-fi
-
-# Count the number of sequences in dna-sequences.fasta
-if [ -f 05_clustered/clustered_representative_sequences.export/dna-sequences.fasta ]; then
-    echo "Number of sequences in dna-sequences.fasta:"
-    grep -c ">" 05_clustered/clustered_representative_sequences.export/dna-sequences.fasta
-else
-    echo "dna-sequences.fasta not found."
-fi
-
-echo "Processing completed."
-
-
-
-##############from here on Tabe changes to table-dn-99.qza and rep-seqs-dn-99.qza is the rep read
 
 # Ensure the output directory exists
 
@@ -149,11 +68,7 @@ qiime feature-classifier classify-sklearn \
   --i-classifier unite-ver9-classifier-23.qza \
   --i-reads 05_clustered/clustered_sequences.qza \
   --output-dir 05_taxonomy
-
-# Export taxonomy
-qiime tools export \
-  --input-path 05_taxonomy/classification.qza \
-  --output-path 05_taxonomy/export
+ 
   
 ###################################################################OR
 qiime feature-classifier classify-consensus-blast \
@@ -163,12 +78,8 @@ qiime feature-classifier classify-consensus-blast \
   --output-dir 05_taxonomy \
   --p-perc-identity 0.80 \
   --p-maxaccepts 1
-  
-qiime tools export \
-  --input-path 05_taxonomy/classification.qza \
-  --output-path export
+ 
 
-cut -f2 05_taxonomy/export/taxonomy.tsv | sort | uniq -c | sort -n -r | head
 #################
 
 # Phylogenetic analysis
@@ -225,11 +136,7 @@ biom convert -i 05_clustered/clustered_table.export/taxonomy.feature-table.biom 
 echo "Processing completed."
 
 
-
-
-
-
-
+ 
 
 # Prepare taxonomy for BIOM
 sed 's/Feature ID/#OTUID/g' "05_taxonomy/export/taxonomy.tsv" | \
@@ -246,7 +153,7 @@ biom add-metadata \
 # Convert BIOM to TSV
 biom convert \
   -i "04_denoise/table.qza.export/taxonomy.feature-table.biom" \
-  -o "04_denoise/table.qza.export/taxonomy.feature-table.biom.tsv" \
+  -o "04_denoise/table.qza.export/taxonomy.feature-table.biom" \
   --to-tsv \
   --header-key taxonomy
 
