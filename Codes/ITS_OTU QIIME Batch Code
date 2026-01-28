@@ -38,15 +38,7 @@ qiime itsxpress trim-pair-output-unmerged \
 qiime demux summarize \
   --i-data trimmed_exact.qza \
   --o-visualization reads_trimmed_summary.qzv
-
-#  '04_denoise' 
-qiime dada2 denoise-paired \
-  --i-demultiplexed-seqs trimmed_exact.qza \
-  --p-trunc-len-r 0 \
-  --p-trunc-len-f 0 \
-  --output-dir  4_denoise
-  --p-n-threads 28
-
+ 
 
 
 ########VSEARCH
@@ -70,17 +62,6 @@ qiime feature-classifier classify-sklearn \
   --output-dir 05_taxonomy
  
   
-###################################################################OR
-qiime feature-classifier classify-consensus-blast \
-  --i-query rep-seqs-dn-98.qza \
-  --i-reference-taxonomy "ver9_dynamic_25.07.2023-taxonomy.qza" \
-  --i-reference-reads "ver9_dynamic_25.07.2023.qza" \
-  --output-dir 05_taxonomy \
-  --p-perc-identity 0.80 \
-  --p-maxaccepts 1
- 
-
-#################
 
 # Phylogenetic analysis
 qiime phylogeny align-to-tree-mafft-fasttree \
