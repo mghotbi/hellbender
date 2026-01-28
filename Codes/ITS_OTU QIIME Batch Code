@@ -111,22 +111,3 @@ biom add-metadata \
   
  
 
-# Prepare taxonomy for BIOM
-sed 's/Feature ID/#OTUID/g' "05_taxonomy/export/taxonomy.tsv" | \
-sed 's/Taxon/taxonomy/g' | \
-sed 's/Consensus/confidence/g' > "05_taxonomy/export/reformat.taxonomy.tsv"
-
-# Add metadata to BIOM
-biom add-metadata \
-  -i "04_denoise/table.qza.export/feature-table.biom" \
-  -o "04_denoise/table.qza.export/taxonomy.feature-table.biom" \
-  --observation-metadata-fp "05_taxonomy/export/reformat.taxonomy.tsv" \
-  --sc-separated taxonomy
-
-# Convert BIOM to TSV
-biom convert \
-  -i "04_denoise/table.qza.export/taxonomy.feature-table.biom" \
-  -o "04_denoise/table.qza.export/taxonomy.feature-table.biom" \
-  --to-tsv \
-  --header-key taxonomy
-
