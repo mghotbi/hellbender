@@ -109,14 +109,6 @@ biom add-metadata \
   --observation-metadata-fp 05_taxonomy/export/ref.taxonomy.tsv \
   --sc-separated taxonomy
   
-  
-
-# Convert to TSV format
-biom convert -i 05_clustered/clustered_table.export/taxonomy.feature-table.biom -o 05_clustered/clustered_table.export/taxonomy.feature-table.tsv --to-tsv --header-key taxonomy
-
-echo "Processing completed."
-
-
  
 
 # Prepare taxonomy for BIOM
