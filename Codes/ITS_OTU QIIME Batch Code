@@ -33,11 +33,6 @@ qiime itsxpress trim-pair-output-unmerged \
   --p-cluster-id 1.0 \
   --p-threads 28 \
   --o-trimmed trimmed_exact.qza
-
-# Summarize demultiplexed sequences
-qiime demux summarize \
-  --i-data trimmed_exact.qza \
-  --o-visualization reads_trimmed_summary.qzv
  
 
 
