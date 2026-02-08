@@ -93,9 +93,7 @@ qiime diversity alpha-rarefaction \
 
 #!/bin/bash
 
-# Modify taxonomy.tsv
-sed 's/Feature ID/#OTUID/g' 05_taxonomy/export/taxonomy.tsv | sed 's/Taxon/taxonomy/g' | sed 's/Consensus/confidence/g' > 05_taxonomy/export/ref.taxonomy.tsv
-
+  
 
 # Add metadata to BIOM
 biom add-metadata \
